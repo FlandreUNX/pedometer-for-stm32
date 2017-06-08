@@ -89,12 +89,12 @@ int formerSteps = -1;
 int active;
 uint32_t old_time, new_time;
 
-#ifdef SERVER_ROLE
+//#ifdef SERVER_ROLE
   BLE_RoleTypeDef BLE_Role = SERVER;
-#endif
-#ifdef CLIENT_ROLE
-  BLE_RoleTypeDef BLE_Role = CLIENT;
-#endif
+//#endif
+//#ifdef CLIENT_ROLE
+//  BLE_RoleTypeDef BLE_Role = CLIENT;
+//#endif
 
 #ifdef THROUGHPUT_TEST
   uint8_t throughput_test = 1; /* enable the test for the estimation of the throughput */
@@ -282,11 +282,11 @@ int main(void)
     bnrg_expansion_board = IDB05A1; 
   }
   
-  if(BLE_Role == CLIENT) {
-    Osal_MemCpy(bdaddr, CLIENT_BDADDR, sizeof(CLIENT_BDADDR));
-  } else {
-    Osal_MemCpy(bdaddr, SERVER_BDADDR, sizeof(SERVER_BDADDR));
-  }
+  //if(BLE_Role == CLIENT) {
+  //  Osal_MemCpy(bdaddr, CLIENT_BDADDR, sizeof(CLIENT_BDADDR));
+  //} else {
+  //  Osal_MemCpy(bdaddr, SERVER_BDADDR, sizeof(SERVER_BDADDR));
+ // }
   
   ret = aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET,
                                   CONFIG_DATA_PUBADDR_LEN,
@@ -300,22 +300,22 @@ int main(void)
     PRINTF("GATT_Init failed.\n");
   }
   
-  if(BLE_Role == SERVER) {
+  //if(BLE_Role == SERVER) {
     if (bnrg_expansion_board == IDB05A1) {
       ret = aci_gap_init_IDB05A1(GAP_PERIPHERAL_ROLE_IDB05A1, 0, 0x07, &service_handle, &dev_name_char_handle, &appearance_char_handle);
     }
     else {
       ret = aci_gap_init_IDB04A1(GAP_PERIPHERAL_ROLE_IDB04A1, &service_handle, &dev_name_char_handle, &appearance_char_handle);
     }
-  }
-  else {
-    if (bnrg_expansion_board == IDB05A1) {
-      ret = aci_gap_init_IDB05A1(GAP_CENTRAL_ROLE_IDB05A1, 0, 0x07, &service_handle, &dev_name_char_handle, &appearance_char_handle);
-    }
-    else {
-      ret = aci_gap_init_IDB04A1(GAP_CENTRAL_ROLE_IDB04A1, &service_handle, &dev_name_char_handle, &appearance_char_handle);
-    }
-  }
+ // }
+ // else {
+  //  if (bnrg_expansion_board == IDB05A1) {
+  //    ret = aci_gap_init_IDB05A1(GAP_CENTRAL_ROLE_IDB05A1, 0, 0x07, &service_handle, &dev_name_char_handle, &appearance_char_handle);
+  //  }
+  //  else {
+   //   ret = aci_gap_init_IDB04A1(GAP_CENTRAL_ROLE_IDB04A1, &service_handle, &dev_name_char_handle, &appearance_char_handle);
+   // }
+  //}
   
   if(ret != BLE_STATUS_SUCCESS){
     PRINTF("GAP_Init failed.\n");
@@ -333,7 +333,7 @@ int main(void)
     PRINTF("BLE Stack Initialized.\n");
   }
   
-  if(BLE_Role == SERVER) {
+ // if(BLE_Role == SERVER) {
     PRINTF("SERVER: BLE Stack Initialized\n");
     ret = Add_Sample_Service();
     
@@ -342,9 +342,9 @@ int main(void)
     else
       PRINTF("Error while adding service.\n");
     
-  } else {
-    PRINTF("CLIENT: BLE Stack Initialized\n");
-  }
+  //} else {
+  //  PRINTF("CLIENT: BLE Stack Initialized\n");
+ // }
   
   /* Set output power level */
   ret = aci_hal_set_tx_power_level(1,4);
