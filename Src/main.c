@@ -40,11 +40,9 @@
 #define PRECISION               100
 #define SAMPLE_PERIOD           20
 #define MAX_VALUE               4096
-#define MIN_INTERVAL            10
-#define MAX_INTERVAL            100
-#define MIN_TIMEWIN				200
+#define MIN_TIMEWIN				350
 #define MAX_TIMEWIN				2000
-//#define STEPTHRESHOLD			4
+#define STEPTHRESHOLD			4
 
 //typedef enum 
 //{  
@@ -78,6 +76,7 @@ int32_t y_min = MAX_VALUE;
 int32_t  z_max = - MAX_VALUE;
 int32_t z_min = MAX_VALUE;
 int32_t  x_th, y_th, z_th;
+int32_t x_absmax,y_absmax,z_absmax;
 int32_t  x_new, x_old, y_new, y_old, z_new, z_old;
 int32_t  x_result, y_result, z_result;
 int32_t d1, d2;
@@ -129,6 +128,7 @@ static void initializeAllSensors(void);
 static void enableAllSensors(void);
 uint8_t intToChar(int32_t);
 static void floatToInt( float in, int32_t *out_int, int32_t *out_dec, int32_t dec_prec );
+static int32_t int32abs(int32_t);
 /**
  * @}
  */
@@ -199,6 +199,13 @@ void vcom_init(void)
     /* Initialization Error */
     Error_Handler(); 
   }
+}
+
+void change_absmax(void) 
+{
+	x_absmax = int32abs(x_max) > int32abs(x_min) ? int32abs(x_max) : int32abs(x_min);
+	y_absmax = int32abs(y_max) > int32abs(y_min) ? int32abs(y_max) : int32abs(y_min);
+	z_absmax = int32abs(z_max) > int32abs(z_min) ? int32abs(z_max) : int32abs(z_min);
 }
 
 /**
@@ -453,20 +460,16 @@ static void start()
     y_result = (y[0] + y[1] + y[2] + y[3])/4;
     z_result = (z[0] + z[1] + z[2] + z[3])/4;
     /*END SUM FILTERING*/
-
-		//x_abs = x_result > 0 ? x_result: -x_result;
-		//y_abs = y_result > 0 ? y_result: -y_result;
-		//z_abs = z_result > 0 ? z_result: -z_result;
 		
 		/*FIND MAX AND MIN VALUE*/
-    if (x_result > x_max) x_max = x_result;
-		if (x_result < x_min) x_min = x_result;
+    if (x_result > x_max) {x_max = x_result;change_absmax();}
+		if (x_result < x_min) {x_min = x_result;change_absmax();}
 		
-		if (y_result > y_max) y_max = y_result;
-		if (y_result < y_min) y_min = y_result;
+		if (y_result > y_max) {y_max = y_result;change_absmax();}
+		if (y_result < y_min) {y_min = y_result;change_absmax();}
 
-		if (z_result > z_max) z_max = z_result;
-		if (z_result < z_min) z_min = z_result;
+		if (z_result > z_max) {z_max = z_result;change_absmax();}
+		if (z_result < z_min) {z_min = z_result;change_absmax();}
 		/*END FIND MAX AND MIN VALUE*/
 		
 		++counter;
@@ -480,12 +483,20 @@ static void start()
 			z_th = (z_max + z_min) >>1;
 			
 			/*INIT VALUE*/
+			/*
 			x_max = -MAX_VALUE;
 			x_min = MAX_VALUE;
 			y_max = -MAX_VALUE;
 			y_min = MAX_VALUE;
 			z_max = -MAX_VALUE;
 			z_min = MAX_VALUE;
+			*/
+			x_max = x_result;
+			x_min = x_result;
+			y_max = y_result;
+			y_min = y_result;
+			z_max = z_result;
+			z_min = z_result;
 			
 			BSP_TEMPERATURE_Get_Temp( TEMPERATURE_handle, &temperature );
 			floatToInt( temperature, &d1, &d2, 2 );
@@ -501,14 +512,15 @@ static void start()
 		if (z_new - z_result > PRECISION || z_result - z_new > PRECISION) z_new = z_result;
 		
 		
+		
 		/*FIND LARGEST ACCEL AXIS*/
-		if(x_max-x_min > y_max-y_min && x_max-x_min > z_max-z_min) 
+		if(x_absmax > y_absmax && x_absmax > z_absmax) 
 		{
 			if(x_old > x_th && x_new < x_th) 
 			{
 				newStep();
 			}
-		} else if (y_max-y_min > x_max-x_min && y_max-y_min > z_max-z_min)
+		} else if (y_absmax > x_absmax && y_absmax > z_absmax)
 		{
 			if(y_old > y_th && y_new < y_th) 
 			{
@@ -531,13 +543,13 @@ static void newStep()
 	new_time = HAL_GetTick();
 	uint32_t time = new_time - old_time;
 	
-		//if(time > MAX_TIMEWIN) 
+	//if(time > MAX_TIMEWIN) 
 	//{
 		//if(mode == PedometerMode_WALK) 
 		//{
 		//	mode = PedometerMode_STEADY;
-	//	}
-	//	tempSteps = 1;
+		//}
+		//tempSteps = 1;
 	//}
 	//else 
 	if(time >= MIN_TIMEWIN && time <= MAX_TIMEWIN) 
@@ -548,7 +560,7 @@ static void newStep()
 		//} 
 		//else {
 		//	if(tempSteps < STEPTHRESHOLD) 
-			//{
+		//	{
 		//		tempSteps++;
 		//		return;
 		//	} 
@@ -557,7 +569,7 @@ static void newStep()
 		//		steps = steps + STEPTHRESHOLD + 1;
 		//		mode = PedometerMode_WALK;
 		//	}
-		//}
+	//	}
 	}
 }
 
@@ -600,6 +612,11 @@ uint8_t intToChar(int32_t num)
 		case 9: return '9';
 	}
 	return '0';
+}
+
+static int32_t int32abs(int32_t num)
+{
+	return num >= 0 ? num : -num;
 }
 
 #ifdef USE_FULL_ASSERT
